@@ -1,4 +1,4 @@
-I32 Main() {
-    I32 test = 12;
-    test -=;
+I32 test = 12;
+if(test == 12) {
+    test--;
 }
