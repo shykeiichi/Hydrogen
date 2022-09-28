@@ -1,0 +1,66 @@
+{'value': 'I32', 'type': 'TYPE'}
+{'value': 'test', 'type': 'ID'}
+{'value': '=', 'type': 'ASOP'}
+{'value': '12', 'type': 'INT'}
+{'value': ';', 'type': 'SYMBOL'}
+{'value': 'if', 'type': 'KEYWORD'}
+{'value': '(', 'type': 'SYMBOL'}
+{'value': 'test', 'type': 'ID'}
+{'value': '==', 'type': 'COMOP'}
+{'value': '12', 'type': 'ID'}
+{'value': ')', 'type': 'SYMBOL'}
+{'value': '{', 'type': 'SYMBOL'}
+{'value': 'test', 'type': 'ID'}
+{'value': '--', 'type': 'ASOP'}
+{'value': ';', 'type': 'SYMBOL'}
+{'value': '}', 'type': 'SYMBOL'}
+
+{
+    "type": "PROG",
+    "prog": [
+        {
+            "type": "DECLARE",
+            "id": "test",
+            "type": "I32"
+        },
+        {
+            "type": "ASSIGN",
+            "id": "test",
+            "value": "12"
+        },
+        {
+            "type": "CONDITIONAL",
+            "operator": "==",
+            "left": [
+                {
+                    "type": "ID",
+                    "value": "test"
+                }
+            ],
+            "right": [
+                {
+                    "type": "I32",
+                    "value": "12"
+                }
+            ],
+            "prog": [
+                {
+                    "type": "ASSIGN",
+                    "id": "test",
+                    "value": [
+                        "type": "BINARY",
+                        "operator": "-",
+                        "left": {
+                            "type": "ID",
+                            "value": "test"
+                        },
+                        "right": {
+                            "type": "I32",
+                            "value": "1"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

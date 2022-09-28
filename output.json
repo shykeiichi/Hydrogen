@@ -1,0 +1,18 @@
+[
+  {
+    "type": "ASSIGN",
+    "id": "test",
+    "value": {
+      "type": "BINARY",
+      "operator": "-",
+      "left": {
+        "type": "ID",
+        "value": "test"
+      },
+      "right": {
+        "type": "I32",
+        "value": "1"
+      }
+    }
+  }
+]

@@ -1,10 +1,15 @@
+import sys, json
+
 L_KEYWORDS = ["switch", "if", "case"]
 L_TYPES = ["U8", "U16", "U32", "I8", "I16", "I32", "I64"]
 L_SYMBOLS = [";", "{", "}", "(", ")", ":"]
 L_COMOP = ["==", "!=", ">=", "<=", ">", "<"]
-L_ASOP = ["+", "++", "+=", "*", "/", "-", "--", "-=", "="]
+L_ASOP_SINGLE = ["++", "--"]
+L_ASOP_MULTIPLE = ["+=", "-=", "="]
+L_ASOP = L_ASOP_SINGLE + L_ASOP_MULTIPLE
+L_BINOP = ["+", "*", "/", "-"]
 
-L_TOKENS = L_KEYWORDS + L_TYPES + L_ASOP + L_SYMBOLS + L_COMOP
+L_TOKENS = L_KEYWORDS + L_TYPES + L_ASOP + L_SYMBOLS + L_COMOP + L_BINOP
 
 def get_type(token: str) -> str:
     token_type = ""
@@ -18,11 +23,19 @@ def get_type(token: str) -> str:
         token_type = "KEYWORD"
     elif(token in L_SYMBOLS):
         token_type = "SYMBOL"
+    elif(token in L_BINOP):
+        token_type = "BINARY"
     return token_type
 
 def run(fn):
     text = open(fn, "r").read().replace("\n", "")
-    print(text)
+    tokens = lexer(text)
+    
+    ofile = open("output.json", "w")
+    ofile.write("")
+    ofile.write(json.dumps(gen_prog(tokens), indent=2))
+    
+def lexer(text):
 
     token = ""
     tokens = []
@@ -54,7 +67,7 @@ def run(fn):
                 token = token[1:]
 
         # print(text[i + 1])
-        print("{} {}".format(token, ""))
+        # print("{} {}".format(token, ""))
         if is_string:
             continue
         elif token in L_SYMBOLS:
@@ -127,6 +140,109 @@ def run(fn):
         
     return tokens
     
-tokens = run("examples/hw.hy")
-for i in tokens:
-    print(i)
+def gen_prog(tokens):
+    parsed_file = []
+    
+    continue_until_semicolon = False
+    
+    for i, token in enumerate(tokens):
+        if continue_until_semicolon:
+            if token["value"] == ";" and token["type"] == "SYMBOL":
+                continue_until_semicolon = False
+            continue
+        
+        print(token)
+        
+        if token["type"] == "TYPE":            
+            parsed_file.append({
+                "type": "DECLARE",
+                "id": tokens[i + 1]["value"],
+                "value": token["value"]
+            })
+            
+            if tokens[i + 2]["type"] == "ASOP":
+                if tokens[i + 2]["value"] != "=":
+                    print("Cannot use dynamic assignment at declaration!")
+                    return
+                else:
+                    parsed_file.append({
+                        "type": "ASSIGN",
+                        "id": tokens[i + 1]["value"],
+                        "value": tokens[i + 3]["value"]
+                    })
+            elif tokens[i + 2]["type"] == "BINOP":
+                print("Can't use binary operator on variable assignment!")
+                return
+            
+            continue_until_semicolon = True
+        elif token["type"] == "ID":
+            if tokens[i + 1]["type"] == "ASOP":
+                continue_until_semicolon = True
+                if(tokens[i + 1]["value"] in L_ASOP_SINGLE):
+                    parsed_file.append({
+                        "type": "ASSIGN",
+                        "id": token["value"],
+                        "value": {
+                            "type": "BINARY",
+                            "operator": tokens[i + 1]["value"][0],
+                            "left": {
+                                "type": "ID",
+                                "value": token["value"]
+                            },
+                            "right": {
+                                "type": "I32",
+                                "value": "1"
+                            }
+                        }
+                    })
+                elif tokens[i + 1]["value"] in L_ASOP_MULTIPLE:
+                    if tokens[i + 1]["value"] == "=":
+                        parsed_file.append({
+                            "type": "ASSIGN",
+                            "id": token["value"],
+                            "value": tokens[i + 2]["value"]
+                        })
+                    else:
+                        parsed_file.append({
+                            "type": "ASSIGN",
+                            "id": token["value"],
+                            "value": {
+                                "type": "BINARY",
+                                "operator": tokens[i + 1]["value"][0],
+                                "left": {
+                                    "type": "ID",
+                                    "value": token["value"]
+                                },
+                                "right": {
+                                    "type": "I32",
+                                    "value": tokens[i + 2]["value"]
+                                }
+                            }
+                        })
+        elif token["type"] == ["KEYWORD"]:
+            match token["value"]:
+                case "if":
+                    parsed_file.append({
+                        "type": "CONDITIONAL",
+                        "operator": "==", # FIX FIX IFX FIX
+                        "id": token["value"],
+                        "value": {
+                            "type": "BINARY",
+                            "operator": tokens[i + 1]["value"][0],
+                            "left": {
+                                "type": "ID",
+                                "value": token["value"]
+                            },
+                            "right": {
+                                "type": "I32",
+                                "value": tokens[i + 2]["value"]
+                            }
+                        }
+                    })
+                    break
+            
+            
+    return parsed_file
+            
+    
+run(sys.argv[1])
