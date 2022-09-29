@@ -11,19 +11,55 @@
   },
   {
     "type": "CONDITIONAL",
-    "operator": "==",
-    "id": "if",
-    "value": {
-      "type": "BINARY",
-      "operator": "(",
-      "left": {
-        "type": "ID",
-        "value": "if"
+    "value": [
+      {
+        "value": "12",
+        "type": "I32"
       },
-      "right": {
-        "type": "I32",
-        "value": "test"
-      }
-    }
+      {
+        "value": "+",
+        "type": "BINOP"
+      },
+      [
+        {
+          "value": "1",
+          "type": "I32"
+        },
+        {
+          "value": "+",
+          "type": "BINOP"
+        },
+        [
+          {
+            "value": "2",
+            "type": "I32"
+          },
+          {
+            "value": "+",
+            "type": "BINOP"
+          },
+          {
+            "type": "BINARY",
+            "operator": "*",
+            "left": {
+              "value": "3",
+              "type": "I32"
+            },
+            "right": {
+              "value": "4",
+              "type": "I32"
+            }
+          },
+          {
+            "value": "-",
+            "type": "BINOP"
+          },
+          {
+            "value": "3",
+            "type": "I32"
+          }
+        ]
+      ]
+    ]
   }
 ]

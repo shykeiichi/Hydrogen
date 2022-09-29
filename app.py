@@ -1,9 +1,12 @@
+from copy import copy
+import enum
 import sys, json
+from pygments import highlight, lexers, formatters
 
 L_KEYWORDS = ["switch", "if", "case"]
 L_TYPES = ["U8", "U16", "U32", "I8", "I16", "I32", "I64"]
 L_SYMBOLS = [";", "{", "}", "(", ")", ":"]
-L_COMOP = ["==", "!=", ">=", "<=", ">", "<"]
+L_COMOP = ["==", "!=", ">=", "<=", ">", "<", "&&", "||"]
 L_ASOP_SINGLE = ["++", "--"]
 L_ASOP_MULTIPLE = ["+=", "-=", "="]
 L_ASOP = L_ASOP_SINGLE + L_ASOP_MULTIPLE
@@ -24,7 +27,7 @@ def get_type(token: str) -> str:
     elif(token in L_SYMBOLS):
         token_type = "SYMBOL"
     elif(token in L_BINOP):
-        token_type = "BINARY"
+        token_type = "BINOP"
     return token_type
 
 def run(fn):
@@ -90,7 +93,7 @@ def lexer(text):
             })
             token = ""
         
-        elif (text[i + 1] == " " or text[i + 1] == ";" or text[i + 1] == ":") and token.replace(".", "").isdigit():
+        elif text[i + 1] == " " or text[i + 1] in L_SYMBOLS and token.replace(".", "").isdigit():
             if token.count('.') > 1:
                 print("Number can't have more than one '.'.")
                 return
@@ -103,7 +106,7 @@ def lexer(text):
             else:
                 tokens.append({
                     "value": token,
-                    "type": "INT"
+                    "type": "I32"
                 })
             token = ""
         elif token[0] == "\"" and token[-1] == "\"":
@@ -144,6 +147,8 @@ def gen_prog(tokens):
     parsed_file = []
     
     continue_until_semicolon = False
+    
+    # print(json.dumps(tokens, indent=2))
     
     for i, token in enumerate(tokens):
         if continue_until_semicolon:
@@ -220,46 +225,109 @@ def gen_prog(tokens):
         elif token["type"] == "KEYWORD":
             match token["value"]:
                 case "if":
-                    get_tokens_between_level_parentheses(tokens, i + 2)
                     parsed_file.append({
                         "type": "CONDITIONAL",
-                        "operator": "==", # FIX FIX IFX FIX
-                        "id": token["value"],
-                        "value": {
-                            "type": "BINARY",
-                            "operator": tokens[i + 1]["value"][0],
-                            "left": {
-                                "type": "ID",
-                                "value": token["value"]
-                            },
-                            "right": {
-                                "type": "I32",
-                                "value": tokens[i + 2]["value"]
-                            }
-                        }
+                        "value": parse_equation(get_tokens_between_level_parentheses(tokens, i + 2))
                     })
+                    formatted_json = json.dumps(parse_equation(get_tokens_between_level_parentheses(tokens, i + 2)), indent=2)    
+                    colorful_json = highlight(str(formatted_json), lexers.JsonLexer(), formatters.TerminalFormatter())
+                    print(colorful_json)
                     break
             
             
     return parsed_file
 
+def parse_equation(tokens):
+    ignore_until_next_bool = False;
+    ignore_until_next_level = 0;
+    for i, token in enumerate(tokens):
+        if ignore_until_next_bool:
+            if token["type"] == "SYMBOL":
+                if token["value"] == "(":
+                    ignore_until_next_level += 1
+                if token["value"] == ")":
+                    ignore_until_next_level -= 1
+                if ignore_until_next_level == -1:
+                    ignore_until_next_bool = False
+                    continue
+
+        if token["type"] == "SYMBOL":
+            if token["value"] == "(":
+                result = parse_equation(get_tokens_between_level_parentheses(tokens, i + 1))
+                result_range = get_range_between_level_parentheses(tokens, i + 1)
+                del tokens[result_range[0] - 1:result_range[1] + 1]
+                tokens.insert(result_range[0] - 1, result) 
+                ignore_until_next_bool = True
+                ignore_until_next_level = 0
+            
+    # print(json.dumps(tokens, indent=2))
+    for i, token in enumerate(tokens):
+        if isinstance(token, dict):
+            if token["type"] == "BINOP":
+                if token["value"] == "*" or token["value"] == "/":
+                    new_op = {
+                        "type": "BINARY",
+                        "operator": token["value"],
+                        "left": tokens[i - 1],
+                        "right": tokens[i + 1]
+                    }
+                    del tokens[i + 1]
+                    del tokens[i]
+                    del tokens[i - 1]
+                    tokens.insert(i - 1, new_op) 
+                    
+    # final_tokens = []
+    # for i, token in enumerate(tokens):
+    #     if isinstance(token, dict):
+    #         if token["type"] == "BINOP":
+    #             final_tokens.append({
+    #                 "type": "BINARY",
+    #                 "operator": token["value"],
+    #                 "left": tokens[i - 1],
+    #                 "right": tokens[i + 1]
+    #             })
+    
+    return tokens
+
 def get_tokens_between_level_parentheses(tokens, start):
-    parentheses = 0
+    final_tokens = []
+    tokens_level = 0
+    
+    end = 0
     for i, token in enumerate(tokens):
         if i < start:
             continue
-        if token["value"] == "(":
-            parentheses += 1
-        if token["value"] == ")":
-            parentheses -= 1
-            if parentheses == -1:
+        if token["type"] == "SYMBOL":
+            if token["value"] == "(":
+                tokens_level += 1
+            if token["value"] == ")":
+                tokens_level -= 1
+            if tokens_level == -1:
+                end = i
                 break
-        
-        print(token)
+        final_tokens.append(token)
+    # print(json.dumps(final_tokens, indent=2)z
 
-def parse_bool(tokens):
-    for token in tokens:
-        pass
-            
+    return final_tokens
+
+def get_range_between_level_parentheses(tokens, start):
+    final_tokens = []
+    tokens_level = 0
+    
+    end = 0
+    for i, token in enumerate(tokens):
+        if i < start:
+            continue
+        if token["type"] == "SYMBOL":
+            if token["value"] == "(":
+                tokens_level += 1
+            if token["value"] == ")":
+                tokens_level -= 1
+            if tokens_level == -1:
+                end = i
+                break
+        final_tokens.append(token)
+    # print(json.dumps(final_tokens, indent=2))
+    return (start, end)
     
 run(sys.argv[1])
