@@ -150,9 +150,7 @@ def gen_prog(tokens):
             if token["value"] == ";" and token["type"] == "SYMBOL":
                 continue_until_semicolon = False
             continue
-        
-        print(token)
-        
+
         if token["type"] == "TYPE":            
             parsed_file.append({
                 "type": "DECLARE",
@@ -219,9 +217,10 @@ def gen_prog(tokens):
                                 }
                             }
                         })
-        elif token["type"] == ["KEYWORD"]:
+        elif token["type"] == "KEYWORD":
             match token["value"]:
                 case "if":
+                    get_tokens_between_level_parentheses(tokens, i + 2)
                     parsed_file.append({
                         "type": "CONDITIONAL",
                         "operator": "==", # FIX FIX IFX FIX
@@ -243,6 +242,24 @@ def gen_prog(tokens):
             
             
     return parsed_file
+
+def get_tokens_between_level_parentheses(tokens, start):
+    parentheses = 0
+    for i, token in enumerate(tokens):
+        if i < start:
+            continue
+        if token["value"] == "(":
+            parentheses += 1
+        if token["value"] == ")":
+            parentheses -= 1
+            if parentheses == -1:
+                break
+        
+        print(token)
+
+def parse_bool(tokens):
+    for token in tokens:
+        pass
             
     
 run(sys.argv[1])

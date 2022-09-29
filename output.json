@@ -1,17 +1,28 @@
 [
   {
+    "type": "DECLARE",
+    "id": "test",
+    "value": "I32"
+  },
+  {
     "type": "ASSIGN",
     "id": "test",
+    "value": "12"
+  },
+  {
+    "type": "CONDITIONAL",
+    "operator": "==",
+    "id": "if",
     "value": {
       "type": "BINARY",
-      "operator": "-",
+      "operator": "(",
       "left": {
         "type": "ID",
-        "value": "test"
+        "value": "if"
       },
       "right": {
         "type": "I32",
-        "value": "1"
+        "value": "test"
       }
     }
   }
